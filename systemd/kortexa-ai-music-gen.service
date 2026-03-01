@@ -1,0 +1,36 @@
+[Unit]
+Description=Kortexa Music Generation Server
+After=network.target
+
+StartLimitIntervalSec=120
+StartLimitBurst=3
+
+[Service]
+Type=simple
+
+User=francip
+Group=francip
+
+WorkingDirectory=/home/francip/src/music-gen.server
+
+Environment=PATH=/home/francip/.local/bin:/home/francip/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONPATH=/home/francip/src/music-gen.server
+Environment=MUSIC_ENV=production
+Environment=DATA_PATH=/home/francip/data/kortexa-ai
+
+ExecStart=/home/francip/src/music-gen.server/run.sh
+
+Restart=always
+RestartSec=20
+
+TimeoutStopSec=60
+
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/home/francip/src/music-gen.server /home/francip/.cache /home/francip/.config /home/francip/data/kortexa-ai
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
