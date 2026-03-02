@@ -9,5 +9,7 @@ build/
 *.mp3
 *.wav
 tests/generated.*
+checkpoints/
 .env
 .env.local
+.DS_Store

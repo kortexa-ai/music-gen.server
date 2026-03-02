@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import threading
 import time
 from typing import Optional
@@ -11,6 +12,9 @@ from typing import Optional
 from .config import settings
 
 logger = logging.getLogger(__name__)
+
+# ACE-Step stores downloaded models under <project_root>/checkpoints/
+_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 
 class MusicGenManager:
@@ -26,15 +30,19 @@ class MusicGenManager:
     # Model loading
     # ------------------------------------------------------------------
     def _load_dit(self):
-        """Load the AceStepHandler (DiT model)."""
+        """Load and initialize the AceStepHandler (DiT model)."""
         from acestep.handler import AceStepHandler
 
-        logger.info("Loading DiT handler: %s", settings.dit_config)
+        logger.info("Initializing DiT handler: %s", settings.dit_config)
         handler = AceStepHandler()
-        handler.device = settings.device
-        handler.dtype = settings.dtype
-        # ACE-Step handler initialization loads model weights on first use;
-        # we set config so it knows which checkpoint to load.
+        status_msg, ok = handler.initialize_service(
+            project_root=_PROJECT_ROOT,
+            config_path=settings.dit_config,
+            device=settings.device,
+        )
+        if not ok:
+            raise RuntimeError(f"DiT initialization failed: {status_msg}")
+        logger.info("DiT initialized: %s", status_msg)
         return handler
 
     def _load_llm(self):
@@ -46,15 +54,19 @@ class MusicGenManager:
         try:
             from acestep.llm_inference import LLMHandler
 
+            checkpoint_dir = os.path.join(_PROJECT_ROOT, "checkpoints")
             logger.info("Loading LLM: %s (backend=%s)", settings.lm_model_path, settings.lm_backend)
             handler = LLMHandler()
-            handler.initialize(
-                checkpoint_dir=settings.dit_config,
+            status_msg, ok = handler.initialize(
+                checkpoint_dir=checkpoint_dir,
                 lm_model_path=settings.lm_model_path,
                 backend=settings.lm_backend,
                 device="auto",
-                dtype=settings.dtype,
             )
+            if not ok:
+                logger.warning("LLM initialization failed: %s", status_msg)
+                return None
+            logger.info("LLM initialized: %s", status_msg)
             return handler
         except Exception:
             logger.warning("LLM initialization failed, running DiT-only", exc_info=True)

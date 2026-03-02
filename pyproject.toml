@@ -5,7 +5,7 @@ description = "FastAPI service exposing ACE-Step music generation endpoints"
 authors = [
     { name = "kortexa.ai", email = "francip@kortexa.ai" }
 ]
-keywords = ["acestep", "music-generation", "fastapi", "audio"]
+keywords = ["ace-step", "music-generation", "fastapi", "audio"]
 license = { text = "MIT" }
 readme = "README.md"
 classifiers = [
@@ -22,9 +22,8 @@ dependencies = [
     "fastapi>=0.128.0",
     "uvicorn[standard]>=0.40.0",
     "pydantic>=2.12.5",
-    "torch>=2.9.1",
-    "accelerate>=1.12.0",
     "python-multipart>=0.0.21",
+    "ace-step",
 ]
 
 [project.optional-dependencies]
@@ -68,7 +67,7 @@ warn_unused_configs = true
 disallow_untyped_defs = true
 
 [tool.uv.sources]
-acestep = { git = "https://github.com/ACE-Step/ACE-Step-1.5.git" }
+ace-step = { git = "https://github.com/ACE-Step/ACE-Step-1.5.git" }
 
 [dependency-groups]
 dev = [

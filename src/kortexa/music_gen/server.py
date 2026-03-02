@@ -116,9 +116,9 @@ def _build_params(
         shift=3.0,
         infer_method="ode",
         # cover/repaint fields
-        reference_audio=reference_audio or "",
+        reference_audio=reference_audio or None,
         audio_cover_strength=audio_cover_strength,
-        src_audio=src_audio or "",
+        src_audio=src_audio or None,
         repainting_start=repainting_start,
         repainting_end=repainting_end,
     )
