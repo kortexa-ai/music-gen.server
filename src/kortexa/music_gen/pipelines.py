@@ -98,6 +98,7 @@ class MusicGenManager:
         params,
         config,
         save_dir: str,
+        progress=None,
     ):
         """Run ACE-Step generate_music synchronously."""
         from acestep.inference import generate_music
@@ -111,6 +112,7 @@ class MusicGenManager:
             params=params,
             config=config,
             save_dir=save_dir,
+            progress=progress,
         )
         return result
 

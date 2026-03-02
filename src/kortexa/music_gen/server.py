@@ -235,6 +235,15 @@ async def generate(req: GenerateRequest) -> AudioResponse:
 
 
 # ----------------------------------------------------------------------
+# POST /generate/stream — SSE streaming variant of /generate
+# ----------------------------------------------------------------------
+@app.post("/generate/stream")
+async def generate_stream(req: GenerateRequest, include_audio: bool = True):
+    from .sse import stream_generate
+    return await stream_generate(req, include_audio=include_audio)
+
+
+# ----------------------------------------------------------------------
 # POST /cover — style transfer with reference audio
 # ----------------------------------------------------------------------
 @app.post(
