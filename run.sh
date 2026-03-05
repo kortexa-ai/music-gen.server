@@ -33,4 +33,5 @@ for arg in "$@"; do
 done
 
 echo "Starting Kortexa Music Generation server ($MUSIC_ENV)..."
-uv run kortexa-music-gen --host "$HOST" --port "$PORT" $PASS_MODE_FLAG $RELOAD_FLAG
+# Use .venv/bin directly to avoid uv run re-resolving and downgrading CUDA torch to CPU
+exec .venv/bin/kortexa-music-gen --host "$HOST" --port "$PORT" $PASS_MODE_FLAG $RELOAD_FLAG

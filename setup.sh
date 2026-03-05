@@ -16,10 +16,24 @@ MSG
     exit 1
 fi
 
+OS="$(uname -s)"
+HAS_CUDA=false
+INSTALL_TARGET="-e ."
+if [[ "$OS" == "Linux" ]] && command -v nvidia-smi &> /dev/null; then
+    echo "NVIDIA GPU detected."
+    INSTALL_TARGET="-e '.[cuda-compat]'"
+    HAS_CUDA=true
+fi
+
 uv venv
 source .venv/bin/activate
 
-uv pip install -e .
+uv pip install $INSTALL_TARGET
+if [[ "$HAS_CUDA" == true ]]; then
+    # PyPI default torch on aarch64 is CPU-only; overwrite with CUDA torch from nightly index
+    echo "Installing PyTorch with CUDA support..."
+    uv pip install --reinstall --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128
+fi
 
 echo ""
 echo "Downloading ACE-Step models into checkpoints/..."
