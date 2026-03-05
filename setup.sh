@@ -28,7 +28,7 @@ fi
 uv venv
 source .venv/bin/activate
 
-uv pip install $INSTALL_TARGET
+eval uv pip install $INSTALL_TARGET
 if [[ "$HAS_CUDA" == true ]]; then
     # PyPI default torch on aarch64 is CPU-only; overwrite with CUDA torch from nightly index
     echo "Installing PyTorch with CUDA support..."
