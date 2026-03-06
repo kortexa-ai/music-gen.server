@@ -12,7 +12,7 @@
 		<string>1</string>
 	</dict>
 	<key>KeepAlive</key>
-	<true/>
+	<false/>
 	<key>Label</key>
 	<string>ai.kortexa.music-gen</string>
 	<key>ProgramArguments</key>
@@ -20,7 +20,7 @@
 		<string>/Users/francip/src/music-gen.server/launchd/kortexa-music-gen.sh</string>
 	</array>
 	<key>RunAtLoad</key>
-	<true/>
+	<false/>
 	<key>StandardErrorPath</key>
 	<string>/Users/francip/Library/Logs/music-gen.log</string>
 	<key>StandardOutPath</key>
