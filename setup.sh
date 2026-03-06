@@ -48,6 +48,17 @@ ok2, msg2 = ensure_dit_model('acestep-v15-turbo', cp, prefer_source='huggingface
 print(msg2)
 "
 
+# Patch nanovllm/acestep to enable enforce_eager on Blackwell (GB10)
+# CUDA graph capture fails on sm_121; enforce_eager runs ops eagerly on GPU instead
+ACESTEP_LLM=$(find .venv/lib -name "llm_inference.py" -path "*/acestep/*" 2>/dev/null | head -1)
+if [[ -n "$ACESTEP_LLM" ]]; then
+    if ! grep -q "gb10" "$ACESTEP_LLM"; then
+        echo "Patching acestep for Blackwell (GB10) enforce_eager..."
+        sed -i.bak 's/("orin", "xavier", "tegra")/("orin", "xavier", "tegra", "gb10")/' "$ACESTEP_LLM"
+        rm -f "${ACESTEP_LLM}.bak"
+    fi
+fi
+
 deactivate
 
 echo ""
