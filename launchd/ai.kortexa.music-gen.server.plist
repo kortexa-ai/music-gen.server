@@ -14,10 +14,10 @@
 	<key>KeepAlive</key>
 	<false/>
 	<key>Label</key>
-	<string>ai.kortexa.music-gen</string>
+	<string>ai.kortexa.music-gen.server</string>
 	<key>ProgramArguments</key>
 	<array>
-		<string>/Users/francip/src/music-gen.server/launchd/kortexa-music-gen.sh</string>
+		<string>/Users/francip/src/music-gen.server/launchd/kortexa-music-gen-server.sh</string>
 	</array>
 	<key>RunAtLoad</key>
 	<false/>
