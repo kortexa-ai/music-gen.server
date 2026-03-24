@@ -27,13 +27,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-cuda-compat = [
-    "nvidia-cufft-cu12",
-    "nvidia-nccl-cu12",
-    "nvidia-nvshmem-cu12",
-    "nvidia-cuda-runtime-cu12",
-    "nvidia-cuda-cupti-cu12",
-]
 dev = [
     "pytest>=8.3.0",
     "pytest-asyncio>=0.25.0",
@@ -72,6 +65,19 @@ python_version = "3.12"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
+
+[tool.uv]
+# Only resolve for platforms that use the lockfile (Sparky/aarch64 uses manual install)
+environments = [
+    "sys_platform == 'linux' and platform_machine == 'x86_64'",
+    "sys_platform == 'darwin'",
+]
+# Override ace-step's torch==2.10.0+cu128 pin — need >=2.11 for Blackwell (cu13/cusparselt 0.8+)
+override-dependencies = [
+    "torch>=2.11",
+    "torchvision>=0.26",
+    "torchaudio>=2.11",
+]
 
 [tool.uv.sources]
 ace-step = { git = "https://github.com/ACE-Step/ACE-Step-1.5.git" }

@@ -17,27 +17,29 @@ MSG
 fi
 
 OS="$(uname -s)"
+ARCH="$(uname -m)"
 HAS_CUDA=false
-INSTALL_TARGET="-e ."
 if [[ "$OS" == "Linux" ]] && command -v nvidia-smi &> /dev/null; then
     echo "NVIDIA GPU detected."
-    INSTALL_TARGET="-e '.[cuda-compat]'"
     HAS_CUDA=true
 fi
 
 uv venv
-source .venv/bin/activate
 
-eval uv pip install $INSTALL_TARGET
-if [[ "$HAS_CUDA" == true ]]; then
-    # PyPI default torch on aarch64 is CPU-only; overwrite with CUDA torch from nightly index
-    echo "Installing PyTorch with CUDA support..."
-    uv pip install --reinstall --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128
+if [[ "$HAS_CUDA" == true && "$ARCH" == "aarch64" ]]; then
+    # DGX Spark (aarch64): PyPI stable torch is CPU-only, use nightly + manual install
+    source .venv/bin/activate
+    uv pip install -e .
+    echo "Installing PyTorch nightly with CUDA support (aarch64)..."
+    uv pip install --reinstall --pre torch torchvision torchaudio torchao --index-url https://download.pytorch.org/whl/nightly/cu128
+else
+    # x86_64 CUDA / macOS: lockfile-managed via uv sync
+    uv sync
 fi
 
 echo ""
 echo "Downloading ACE-Step models into checkpoints/..."
-python -c "
+uv run python -c "
 from pathlib import Path
 from acestep.model_downloader import ensure_main_model, ensure_dit_model
 cp = Path('checkpoints')
@@ -48,18 +50,16 @@ ok2, msg2 = ensure_dit_model('acestep-v15-turbo', cp, prefer_source='huggingface
 print(msg2)
 "
 
-# Patch nanovllm/acestep to enable enforce_eager on Blackwell (GB10)
-# CUDA graph capture fails on sm_121; enforce_eager runs ops eagerly on GPU instead
-ACESTEP_LLM=$(find .venv/lib -name "llm_inference.py" -path "*/acestep/*" 2>/dev/null | head -1)
-if [[ -n "$ACESTEP_LLM" ]]; then
-    if ! grep -q "gb10" "$ACESTEP_LLM"; then
-        echo "Patching acestep for Blackwell (GB10) enforce_eager..."
-        sed -i.bak 's/("orin", "xavier", "tegra")/("orin", "xavier", "tegra", "gb10")/' "$ACESTEP_LLM"
-        rm -f "${ACESTEP_LLM}.bak"
-    fi
+# Patch acestep: CUDA graph capture fails on Blackwell, force eager mode
+if [[ "$HAS_CUDA" == true ]]; then
+    ACESTEP_LLM=$(find .venv/lib -name "llm_inference.py" -path "*/acestep/*" 2>/dev/null | head -1)
+    [[ -n "$ACESTEP_LLM" ]] && sed -i 's/enforce_eager_for_vllm = bool(is_rocm or is_jetson)/enforce_eager_for_vllm = True/' "$ACESTEP_LLM"
 fi
 
-deactivate
+# deactivate venv if we activated it (aarch64 path)
+if [[ "$(type -t deactivate)" == "function" ]]; then
+    deactivate
+fi
 
 echo ""
 echo "Setup complete."
