@@ -82,13 +82,11 @@ class Settings:
 
     @cached_property
     def lm_backend(self) -> str:
-        """Auto-detect best LM backend: vllm on CUDA, mlx on MPS, pt fallback."""
+        """Auto-detect best LM backend: pt on CUDA (faster, lower VRAM), mlx on MPS."""
         env_val = os.getenv("LM_BACKEND")
         if env_val:
             return env_val
 
-        if self.device == "cuda":
-            return "vllm"
         if self.device == "mps":
             return "mlx"
         return "pt"
