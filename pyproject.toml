@@ -12,12 +12,11 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-requires-python = ">=3.12"
+requires-python = ">=3.12,<3.13"
 dependencies = [
     "fastapi>=0.128.0",
     "uvicorn[standard]>=0.40.0",
@@ -66,21 +65,30 @@ warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
 
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
 [tool.uv]
 # Only resolve for platforms that use the lockfile (Sparky/aarch64 uses manual install)
 environments = [
     "sys_platform == 'linux' and platform_machine == 'x86_64'",
     "sys_platform == 'darwin'",
 ]
-# Override ace-step's torch==2.10.0+cu128 pin — need >=2.11 for Blackwell (cu13/cusparselt 0.8+)
-override-dependencies = [
-    "torch>=2.11",
-    "torchvision>=0.26",
-    "torchaudio>=2.11",
-]
 
 [tool.uv.sources]
 ace-step = { git = "https://github.com/ACE-Step/ACE-Step-1.5.git" }
+# ACE-Step's exact CUDA 12.8 pins require the official PyTorch wheel index on Linux x86_64.
+torch = [
+    { index = "pytorch-cu128", marker = "sys_platform == 'linux' and platform_machine == 'x86_64'" },
+]
+torchaudio = [
+    { index = "pytorch-cu128", marker = "sys_platform == 'linux' and platform_machine == 'x86_64'" },
+]
+torchvision = [
+    { index = "pytorch-cu128", marker = "sys_platform == 'linux' and platform_machine == 'x86_64'" },
+]
 
 [dependency-groups]
 dev = [
