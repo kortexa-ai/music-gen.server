@@ -9,13 +9,14 @@ import os
 import sys
 from pathlib import Path
 
+import uvicorn
+from uvicorn.config import LOGGING_CONFIG as UVICORN_LOGGING_CONFIG
+
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from kortexa.music_gen.config import settings
-from kortexa.music_gen.pipelines import preload_if_requested
-from uvicorn.config import LOGGING_CONFIG as UVICORN_LOGGING_CONFIG
-import uvicorn
+from kortexa.music_gen.config import settings  # noqa: E402
+from kortexa.music_gen.pipelines import preload_if_requested  # noqa: E402
 
 
 def main() -> None:
@@ -44,7 +45,10 @@ def main() -> None:
     print(f"Host: {args.host}:{args.port}")
     print(f"Device: {settings.device} ({settings.dtype})")
     print(f"DiT: {settings.dit_config}")
-    print(f"LM: {settings.lm_model_path} (enabled={settings.enable_lm}, backend={settings.lm_backend})")
+    print(
+        f"LM: {settings.lm_model_path} "
+        f"(enabled={settings.enable_lm}, backend={settings.lm_backend})"
+    )
     print("Press Ctrl+C to stop\n")
 
     uvicorn.run(

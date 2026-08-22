@@ -8,8 +8,9 @@ import os
 import shutil
 import tempfile
 import time
-from contextlib import contextmanager
-from typing import Optional
+from collections.abc import AsyncIterator, Iterator
+from contextlib import asynccontextmanager, contextmanager
+from typing import Any, Literal
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse
@@ -20,22 +21,25 @@ from .schemas import AudioResponse, GenerateRequest, InferenceMetadata
 
 logger = logging.getLogger(__name__)
 
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+    if settings.preload_models:
+        logger.info("Preloading ACE-Step models per configuration")
+        preload_if_requested()
+    yield
+
+
 app = FastAPI(
     title="Kortexa Music Generation Server",
     version="0.1.0",
     description="Music generation using ACE-Step 1.5 diffusion models.",
+    lifespan=lifespan,
 )
 
 
-@app.on_event("startup")
-async def _startup() -> None:
-    if settings.preload_models:
-        logger.info("Preloading ACE-Step models per configuration")
-        preload_if_requested()
-
-
 @app.get("/health")
-async def health() -> dict:
+async def health() -> dict[str, object]:
     return {
         "status": "ok",
         "device": settings.device,
@@ -49,7 +53,7 @@ async def health() -> dict:
 
 
 @contextmanager
-def _temp_dir():
+def _temp_dir() -> Iterator[str]:
     """Create a temp directory and clean it up on exit."""
     d = tempfile.mkdtemp(prefix="music_gen_")
     try:
@@ -66,7 +70,9 @@ def _collect_audio_files(directory: str, audio_format: str) -> list[str]:
         if not os.path.isfile(fpath):
             continue
         # Accept files matching the requested format, or any audio file
-        if fname.endswith(f".{audio_format}") or fname.endswith((".flac", ".mp3", ".wav", ".opus", ".aac")):
+        if fname.endswith(f".{audio_format}") or fname.endswith(
+            (".flac", ".mp3", ".wav", ".opus", ".aac")
+        ):
             with open(fpath, "rb") as f:
                 encoded.append(base64.b64encode(f.read()).decode("utf-8"))
     return encoded
@@ -79,22 +85,22 @@ def _build_params(
     lyrics: str = "[Instrumental]",
     instrumental: bool = False,
     vocal_language: str = "en",
-    duration: Optional[float] = None,
-    bpm: Optional[int] = None,
-    keyscale: Optional[str] = None,
-    timesignature: Optional[str] = None,
+    duration: float | None = None,
+    bpm: int | None = None,
+    keyscale: str | None = None,
+    timesignature: str | None = None,
     inference_steps: int = 8,
     guidance_scale: float = 7.0,
     seed: int = -1,
     thinking: bool = True,
     # cover-specific
-    reference_audio: Optional[str] = None,
+    reference_audio: str | None = None,
     audio_cover_strength: float = 0.5,
     # repaint-specific
-    src_audio: Optional[str] = None,
+    src_audio: str | None = None,
     repainting_start: float = 0.0,
     repainting_end: float = 0.0,
-):
+) -> Any:
     """Build ACE-Step GenerationParams."""
     from acestep.inference import GenerationParams
 
@@ -124,7 +130,7 @@ def _build_params(
     )
 
 
-def _build_config(*, batch_size: int = 1, audio_format: str = "flac", seed: int = -1):
+def _build_config(*, batch_size: int = 1, audio_format: str = "flac", seed: int = -1) -> Any:
     """Build ACE-Step GenerationConfig."""
     from acestep.inference import GenerationConfig
 
@@ -138,9 +144,9 @@ def _build_config(*, batch_size: int = 1, audio_format: str = "flac", seed: int 
 
 def _build_metadata(
     *,
-    request_type: str,
+    request_type: Literal["text2music", "cover", "repaint"],
     caption: str,
-    duration: Optional[float],
+    duration: float | None,
     steps: int,
     guidance_scale: float,
     seed: int,
@@ -176,7 +182,10 @@ def _build_metadata(
 async def generate(req: GenerateRequest) -> AudioResponse:
     logger.info(
         "generate: caption='%s' duration=%s steps=%d guidance=%.1f",
-        req.caption, req.duration, req.inference_steps, req.guidance_scale,
+        req.caption,
+        req.duration,
+        req.inference_steps,
+        req.guidance_scale,
     )
 
     params = _build_params(
@@ -204,7 +213,9 @@ async def generate(req: GenerateRequest) -> AudioResponse:
     with _temp_dir() as save_dir:
         try:
             result = await pipeline_manager.generate_async(
-                params=params, config=config, save_dir=save_dir,
+                params=params,
+                config=config,
+                save_dir=save_dir,
             )
         except Exception as exc:
             logger.exception("Generation failure")
@@ -238,8 +249,9 @@ async def generate(req: GenerateRequest) -> AudioResponse:
 # POST /generate/stream — SSE streaming variant of /generate
 # ----------------------------------------------------------------------
 @app.post("/generate/stream")
-async def generate_stream(req: GenerateRequest, include_audio: bool = True):
+async def generate_stream(req: GenerateRequest, include_audio: bool = True) -> Any:
     from .sse import stream_generate
+
     return await stream_generate(req, include_audio=include_audio)
 
 
@@ -257,10 +269,10 @@ async def cover(
     lyrics: str = Form("[Instrumental]"),
     instrumental: bool = Form(False),
     vocal_language: str = Form("en"),
-    duration: Optional[float] = Form(default=settings.default_duration),
-    bpm: Optional[int] = Form(None),
-    keyscale: Optional[str] = Form(None),
-    timesignature: Optional[str] = Form(None),
+    duration: float | None = Form(default=settings.default_duration),
+    bpm: int | None = Form(None),
+    keyscale: str | None = Form(None),
+    timesignature: str | None = Form(None),
     inference_steps: int = Form(default=settings.default_inference_steps),
     guidance_scale: float = Form(default=settings.default_guidance_scale),
     seed: int = Form(-1),
@@ -272,7 +284,9 @@ async def cover(
     logger.info("cover: caption='%s' strength=%.2f", caption, audio_cover_strength)
 
     if batch_size > settings.max_batch_size:
-        raise HTTPException(status_code=400, detail=f"batch_size must be <= {settings.max_batch_size}")
+        raise HTTPException(
+            status_code=400, detail=f"batch_size must be <= {settings.max_batch_size}"
+        )
 
     start = time.perf_counter()
     with _temp_dir() as save_dir:
@@ -304,7 +318,9 @@ async def cover(
 
         try:
             result = await pipeline_manager.generate_async(
-                params=params, config=config, save_dir=save_dir,
+                params=params,
+                config=config,
+                save_dir=save_dir,
             )
         except Exception as exc:
             logger.exception("Cover failure")
@@ -350,10 +366,10 @@ async def repaint(
     lyrics: str = Form("[Instrumental]"),
     instrumental: bool = Form(False),
     vocal_language: str = Form("en"),
-    duration: Optional[float] = Form(default=settings.default_duration),
-    bpm: Optional[int] = Form(None),
-    keyscale: Optional[str] = Form(None),
-    timesignature: Optional[str] = Form(None),
+    duration: float | None = Form(default=settings.default_duration),
+    bpm: int | None = Form(None),
+    keyscale: str | None = Form(None),
+    timesignature: str | None = Form(None),
     inference_steps: int = Form(default=settings.default_inference_steps),
     guidance_scale: float = Form(default=settings.default_guidance_scale),
     seed: int = Form(-1),
@@ -366,7 +382,9 @@ async def repaint(
     if repainting_end <= repainting_start:
         raise HTTPException(status_code=400, detail="repainting_end must be > repainting_start")
     if batch_size > settings.max_batch_size:
-        raise HTTPException(status_code=400, detail=f"batch_size must be <= {settings.max_batch_size}")
+        raise HTTPException(
+            status_code=400, detail=f"batch_size must be <= {settings.max_batch_size}"
+        )
 
     start = time.perf_counter()
     with _temp_dir() as save_dir:
@@ -399,7 +417,9 @@ async def repaint(
 
         try:
             result = await pipeline_manager.generate_async(
-                params=params, config=config, save_dir=save_dir,
+                params=params,
+                config=config,
+                save_dir=save_dir,
             )
         except Exception as exc:
             logger.exception("Repaint failure")
@@ -432,7 +452,7 @@ async def repaint(
 # ----------------------------------------------------------------------
 # Helpers
 # ----------------------------------------------------------------------
-def _ext(filename: Optional[str]) -> str:
+def _ext(filename: str | None) -> str:
     """Extract file extension from upload filename, defaulting to empty."""
     if filename and "." in filename:
         return "." + filename.rsplit(".", 1)[-1]

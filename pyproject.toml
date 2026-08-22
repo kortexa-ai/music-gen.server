@@ -6,10 +6,9 @@ authors = [
     { name = "kortexa.ai", email = "francip@kortexa.ai" }
 ]
 keywords = ["ace-step", "music-generation", "fastapi", "audio"]
-license = { text = "MIT" }
+license = "MIT"
 readme = "README.md"
 classifiers = [
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.12",
     "Development Status :: 4 - Beta",
@@ -18,20 +17,20 @@ classifiers = [
 ]
 requires-python = ">=3.12,<3.13"
 dependencies = [
-    "fastapi>=0.128.0",
-    "uvicorn[standard]>=0.40.0",
-    "pydantic>=2.12.5",
-    "python-multipart>=0.0.21",
+    "fastapi>=0.141.1",
+    "uvicorn[standard]>=0.52.4",
+    "pydantic>=2.13.4",
+    "python-multipart>=0.0.32",
     "ace-step",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=8.3.0",
-    "pytest-asyncio>=0.25.0",
-    "black>=24.8.0",
-    "ruff>=0.6.0",
-    "mypy>=1.13.0",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "black>=26.5.1",
+    "ruff>=0.16.4",
+    "mypy>=2.3.1",
 ]
 
 [project.urls]
@@ -42,7 +41,7 @@ Repository = "https://github.com/kortexa-ai/music-gen.server.git"
 "kortexa-music-gen" = "scripts.server:main"
 
 [build-system]
-requires = ["setuptools>=68.0", "wheel"]
+requires = ["setuptools>=84.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
@@ -57,13 +56,23 @@ target-version = ['py312']
 
 [tool.ruff]
 line-length = 100
+
+[tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+# FastAPI reads these dependency declarations from function defaults.
+"src/kortexa/music_gen/server.py" = ["B008"]
 
 [tool.mypy]
 python_version = "3.12"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = ["acestep.*"]
+ignore_missing_imports = true
 
 [[tool.uv.index]]
 name = "pytorch-cu128"
@@ -92,9 +101,9 @@ torchvision = [
 
 [dependency-groups]
 dev = [
-    "black>=25.12.0",
-    "mypy>=1.19.1",
-    "pytest>=9.0.2",
-    "pytest-asyncio>=1.3.0",
-    "ruff>=0.14.13",
+    "black>=26.5.1",
+    "mypy>=2.3.1",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "ruff>=0.16.4",
 ]

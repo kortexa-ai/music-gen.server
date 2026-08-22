@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import List, Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -16,10 +16,10 @@ class GenerateRequest(BaseModel):
     lyrics: str = Field("[Instrumental]", max_length=4096)
     instrumental: bool = Field(False)
     vocal_language: str = Field("en")
-    duration: Optional[float] = Field(default=settings.default_duration, ge=10, le=600)
-    bpm: Optional[int] = Field(None, ge=30, le=300)
-    keyscale: Optional[str] = Field(None)
-    timesignature: Optional[str] = Field(None)
+    duration: float | None = Field(default=settings.default_duration, ge=10, le=600)
+    bpm: int | None = Field(None, ge=30, le=300)
+    keyscale: str | None = Field(None)
+    timesignature: str | None = Field(None)
     inference_steps: int = Field(default=settings.default_inference_steps, ge=1, le=100)
     guidance_scale: float = Field(default=settings.default_guidance_scale, ge=0.0, le=20.0)
     seed: int = Field(-1, ge=-1, le=2**32 - 1)
@@ -44,7 +44,7 @@ class GenerateRequest(BaseModel):
 
     @field_validator("timesignature")
     @classmethod
-    def _check_timesig(cls, value: Optional[str]) -> Optional[str]:
+    def _check_timesig(cls, value: str | None) -> str | None:
         if value is not None and value not in {"2/4", "3/4", "4/4", "6/8"}:
             raise ValueError("timesignature must be one of: 2/4, 3/4, 4/4, 6/8")
         return value
@@ -58,7 +58,7 @@ class InferenceMetadata(BaseModel):
     device: str
     dtype: str
     caption: str
-    duration: Optional[float]
+    duration: float | None
     steps: int
     guidance_scale: float
     seed: int
@@ -71,7 +71,7 @@ class InferenceMetadata(BaseModel):
 class AudioResponse(BaseModel):
     """Base64 encoded audio results and metadata."""
 
-    audios: List[str]
+    audios: list[str]
     metadata: InferenceMetadata
 
 

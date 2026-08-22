@@ -5,7 +5,6 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from functools import cached_property
-from typing import Optional
 
 import torch
 
@@ -53,7 +52,8 @@ class Settings:
             return "cuda"
         if getattr(torch.backends, "mps", None) and torch.backends.mps.is_available():
             return "mps"
-        if getattr(torch.backends, "xpu", None) and torch.backends.xpu.is_available():
+        xpu = getattr(torch, "xpu", None)
+        if xpu is not None and xpu.is_available():
             return "xpu"
         return "cpu"
 

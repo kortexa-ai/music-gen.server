@@ -8,6 +8,8 @@ import logging
 import shutil
 import tempfile
 import time
+from collections.abc import AsyncIterator
+from typing import Any
 
 from fastapi.responses import StreamingResponse
 
@@ -21,15 +23,15 @@ logger = logging.getLogger(__name__)
 CHUNK_SIZE = 256 * 1024
 
 
-def _sse_event(event: str, data: dict) -> str:
+def _sse_event(event: str, data: dict[str, Any]) -> str:
     """Format a single SSE event."""
     return f"event: {event}\ndata: {json.dumps(data)}\n\n"
 
 
-async def stream_generate(req: GenerateRequest, include_audio: bool = True):
+async def stream_generate(req: GenerateRequest, include_audio: bool = True) -> StreamingResponse:
     """Run generation in a background thread, streaming progress via SSE."""
 
-    queue: asyncio.Queue = asyncio.Queue()
+    queue: asyncio.Queue[tuple[str, dict[str, Any]]] = asyncio.Queue()
     loop = asyncio.get_running_loop()
 
     params = _build_params(
@@ -65,14 +67,17 @@ async def stream_generate(req: GenerateRequest, include_audio: bool = True):
         except Exception:
             pass  # queue full or loop closed — non-fatal
 
-    async def event_stream():
+    async def event_stream() -> AsyncIterator[str]:
         start = time.perf_counter()
         gen_task = None
         try:
             # Kick off generation in thread pool
             gen_task = asyncio.ensure_future(
                 pipeline_manager.generate_async(
-                    params=params, config=config, save_dir=save_dir, progress=progress_cb,
+                    params=params,
+                    config=config,
+                    save_dir=save_dir,
+                    progress=progress_cb,
                 )
             )
 
@@ -81,7 +86,7 @@ async def stream_generate(req: GenerateRequest, include_audio: bool = True):
                 try:
                     evt = await asyncio.wait_for(queue.get(), timeout=0.5)
                     yield _sse_event(evt[0], evt[1])
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     continue
 
             # Flush any remaining queued events
@@ -104,13 +109,18 @@ async def stream_generate(req: GenerateRequest, include_audio: bool = True):
                 for audio_idx, audio_b64 in enumerate(encoded_audios):
                     total_chunks = (len(audio_b64) + CHUNK_SIZE - 1) // CHUNK_SIZE
                     for chunk_idx in range(total_chunks):
-                        chunk_data = audio_b64[chunk_idx * CHUNK_SIZE : (chunk_idx + 1) * CHUNK_SIZE]
-                        yield _sse_event("audio_chunk", {
-                            "audio_index": audio_idx,
-                            "chunk_index": chunk_idx,
-                            "total_chunks": total_chunks,
-                            "data": chunk_data,
-                        })
+                        chunk_data = audio_b64[
+                            chunk_idx * CHUNK_SIZE : (chunk_idx + 1) * CHUNK_SIZE
+                        ]
+                        yield _sse_event(
+                            "audio_chunk",
+                            {
+                                "audio_index": audio_idx,
+                                "chunk_index": chunk_idx,
+                                "total_chunks": total_chunks,
+                                "data": chunk_data,
+                            },
+                        )
 
             # Metadata event
             meta = _build_metadata(
@@ -127,10 +137,13 @@ async def stream_generate(req: GenerateRequest, include_audio: bool = True):
             yield _sse_event("metadata", meta.model_dump())
 
             # Done
-            yield _sse_event("done", {
-                "elapsed": round(elapsed, 2),
-                "num_audios": num_audios,
-            })
+            yield _sse_event(
+                "done",
+                {
+                    "elapsed": round(elapsed, 2),
+                    "num_audios": num_audios,
+                },
+            )
 
         except asyncio.CancelledError:
             if gen_task and not gen_task.done():

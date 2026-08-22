@@ -7,29 +7,31 @@ import logging
 import os
 import threading
 import time
-from typing import Optional
+from typing import Any
 
 from .config import settings
 
 logger = logging.getLogger(__name__)
 
 # ACE-Step stores downloaded models under <project_root>/checkpoints/
-_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+_PROJECT_ROOT = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
 
 
 class MusicGenManager:
     """Lazy loader and wrapper around ACE-Step handlers."""
 
     def __init__(self) -> None:
-        self._dit = None
-        self._llm = None
+        self._dit: Any = None
+        self._llm: Any = None
         self._lm_available: bool = False
         self._lock = threading.RLock()
 
     # ------------------------------------------------------------------
     # Model loading
     # ------------------------------------------------------------------
-    def _load_dit(self):
+    def _load_dit(self) -> Any:
         """Load and initialize the AceStepHandler (DiT model)."""
         from acestep.handler import AceStepHandler
 
@@ -45,7 +47,7 @@ class MusicGenManager:
         logger.info("DiT initialized: %s", status_msg)
         return handler
 
-    def _load_llm(self):
+    def _load_llm(self) -> Any | None:
         """Load the LLMHandler. Returns None on failure (graceful degradation)."""
         if not settings.enable_lm:
             logger.info("LM disabled by configuration")
@@ -72,13 +74,13 @@ class MusicGenManager:
             logger.warning("LLM initialization failed, running DiT-only", exc_info=True)
             return None
 
-    def get_dit(self):
+    def get_dit(self) -> Any:
         with self._lock:
             if self._dit is None:
                 self._dit = self._load_dit()
             return self._dit
 
-    def get_llm(self):
+    def get_llm(self) -> Any | None:
         with self._lock:
             if self._llm is None and not self._lm_available and settings.enable_lm:
                 self._llm = self._load_llm()
@@ -95,11 +97,11 @@ class MusicGenManager:
     def generate(
         self,
         *,
-        params,
-        config,
+        params: Any,
+        config: Any,
         save_dir: str,
-        progress=None,
-    ):
+        progress: Any = None,
+    ) -> Any:
         """Run ACE-Step generate_music synchronously."""
         from acestep.inference import generate_music
 
@@ -116,7 +118,7 @@ class MusicGenManager:
         )
         return result
 
-    async def generate_async(self, **kwargs):
+    async def generate_async(self, **kwargs: Any) -> Any:
         return await asyncio.to_thread(self.generate, **kwargs)
 
 
