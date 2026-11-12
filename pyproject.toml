@@ -22,6 +22,8 @@ dependencies = [
     "pydantic>=2.14.3",
     "python-multipart>=0.0.33",
     "ace-step",
+    # TorchCodec's binary API must match ACE-Step's Linux PyTorch 2.10 pin.
+    "torchcodec>=0.10,<0.11; sys_platform == 'linux' and platform_machine == 'x86_64'",
 ]
 
 [project.optional-dependencies]

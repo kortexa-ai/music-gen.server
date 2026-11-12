@@ -31,6 +31,11 @@ PyPI release of every package cannot be installed together.
 The lockfile targets Linux x86_64 and macOS on Apple Silicon. The bundled
 `nano-vllm` source follows the same ACE-Step Git repository as the main package.
 
+Linux also requires TorchCodec 0.10 to match PyTorch 2.10's binary API. Newer
+TorchCodec releases fail to load with an undefined-symbol error, which breaks
+audio uploads. Update that constraint together with upstream PyTorch, following
+the [TorchCodec compatibility table](https://github.com/meta-pytorch/torchcodec#compatibility-with-torch-versions).
+
 `bitsandbytes not installed. Using standard AdamW.` comes from ACE-Step's
 training module at import time. It means fine-tuning uses the standard optimizer
 instead of the optional 8-bit optimizer. This server performs inference, so the
