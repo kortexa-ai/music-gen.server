@@ -19,8 +19,15 @@ inference imports pass with exactly the RTX PRO 6000 visible.
 
 A 10-second batch-1 text generation canary produced finite, non-silent stereo
 FLAC at 48 kHz with the LM enabled. An additional codec import check found
-TorchCodec 0.17's binary API incompatible with PyTorch 2.10. Constrain Linux
-TorchCodec to the compatible 0.10 series and verify audio decoding before delivery.
+TorchCodec 0.17's binary API incompatible with PyTorch 2.10. Linux TorchCodec is
+constrained to the compatible 0.10 series, and torchaudio decoding of the canary
+passes.
+
+The live cover check exposed an input mapping mismatch: ACE-Step requires cover
+audio in `src_audio`. The corrected wrapper uses that field and keeps cover/repaint
+uploads in an input subdirectory so responses contain only generated files. Both
+upload regression tests pass, bringing the suite to six tests. Live upload canaries
+verify generation after deployment; runtime evidence belongs on the issue.
 
 Deployment must preserve other GPU services and experiments. Check GPU process
 ownership, Agent Bus history, Snappy processes, and work claims before loading

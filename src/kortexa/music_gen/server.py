@@ -290,8 +290,10 @@ async def cover(
 
     start = time.perf_counter()
     with _temp_dir() as save_dir:
-        # Save uploaded reference audio
-        ref_path = os.path.join(save_dir, "reference_audio" + _ext(reference_audio.filename))
+        # Save uploaded reference audio separately from generated output files.
+        input_dir = os.path.join(save_dir, "inputs")
+        os.mkdir(input_dir)
+        ref_path = os.path.join(input_dir, "reference_audio" + _ext(reference_audio.filename))
         data = await reference_audio.read()
         await reference_audio.close()
         with open(ref_path, "wb") as f:
@@ -311,7 +313,7 @@ async def cover(
             guidance_scale=guidance_scale,
             seed=seed,
             thinking=thinking,
-            reference_audio=ref_path,
+            src_audio=ref_path,
             audio_cover_strength=audio_cover_strength,
         )
         config = _build_config(batch_size=batch_size, audio_format=audio_format, seed=seed)
@@ -388,8 +390,10 @@ async def repaint(
 
     start = time.perf_counter()
     with _temp_dir() as save_dir:
-        # Save uploaded source audio
-        src_path = os.path.join(save_dir, "src_audio" + _ext(src_audio.filename))
+        # Save uploaded source audio separately from generated output files.
+        input_dir = os.path.join(save_dir, "inputs")
+        os.mkdir(input_dir)
+        src_path = os.path.join(input_dir, "src_audio" + _ext(src_audio.filename))
         data = await src_audio.read()
         await src_audio.close()
         with open(src_path, "wb") as f:
