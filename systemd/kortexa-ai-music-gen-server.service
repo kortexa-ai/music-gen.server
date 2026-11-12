@@ -18,6 +18,8 @@ Environment=PYTHONUNBUFFERED=1
 Environment=PYTHONPATH=/home/francip/src/music-gen.server
 Environment=MUSIC_ENV=production
 Environment=DATA_PATH=/home/francip/data/kortexa-ai
+# Pin by UUID: PyTorch and nvidia-smi enumerate Smarty's GPUs differently.
+Environment=CUDA_VISIBLE_DEVICES=GPU-a71210ca-e14a-755a-88bb-77f53a2102f6
 
 ExecStart=/home/francip/src/music-gen.server/run.sh
 
