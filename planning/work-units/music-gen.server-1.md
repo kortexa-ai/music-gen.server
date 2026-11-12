@@ -29,6 +29,10 @@ uploads in an input subdirectory so responses contain only generated files. Both
 upload regression tests pass, bringing the suite to six tests. Live upload canaries
 verify generation after deployment; runtime evidence belongs on the issue.
 
+ACE-Step's direct-conditioning path expects missing key and time signature values
+as empty strings. Normalize these optional API values at the parameter boundary;
+the upload regression tests also check that representation.
+
 Deployment must preserve other GPU services and experiments. Check GPU process
 ownership, Agent Bus history, Snappy processes, and work claims before loading
 models. Record runtime and delivery evidence on the issue.

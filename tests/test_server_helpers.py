@@ -62,6 +62,8 @@ def test_audio_upload_uses_source_audio_and_returns_only_generated_files(
         assert source.read_bytes() == b"uploaded audio"
         assert source.parent != Path(save_dir)
         assert params.reference_audio is None
+        assert params.keyscale == ""
+        assert params.timesignature == ""
         Path(save_dir, "generated.flac").write_bytes(b"generated audio")
         return SimpleNamespace(success=True)
 
